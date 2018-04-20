@@ -31,4 +31,23 @@ svg g {
 
 .line {
   fill: none;
+  stroke-width: 2px;
+}
+
+.legendLine  {
+  cursor: pointer;
+  /* font-family: curatorRegular; */
+  font-size: 15px;
+  line-height: 21px;
+}
+
+.legend {
+  font-family: curatorBold;
+  font-size: 15px;
+  line-height: 21px;
+}
+
+.tick {
+  stroke: #777;
+  stroke-width: 0.25px;
 }
