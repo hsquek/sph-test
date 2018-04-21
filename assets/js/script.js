@@ -11,11 +11,11 @@
         thailand: 2
       }
 
-      const colors = {
-        india: '#FABE9C',
-        vietnam: '#FED47D',
-        thailand: '#F6AB9A'
-      }
+      // const colors = {
+      //   india: '#FABE9C',
+      //   vietnam: '#FED47D',
+      //   thailand: '#F6AB9A'
+      // }
 
       const visState = {
         india: true,
@@ -65,32 +65,27 @@
                         .x(function (d) { return xScale(d.year) })
                         .y(function (d) { return yScale(d.value) })
 
-      initCharts(countries, svg)
+      var indicators = ['Vietnam', 'India', 'Thailand']
 
-      var legendKeys = ['Vietnam', 'India', 'Thailand']
+      svg.append('g')
+         .attr('class', 'legend')
+         .attr('transform', 'translate(' + (width * 0.83 + 10) + ', 0)')
+         .append('text')
+         .text('Click to hide/show')
 
-      var legend = svg.append('g')
-                      .attr('class', 'legend')
-                      .attr('transform', 'translate(' + (width * 0.83) + ', 0)')
-                      .append('text')
-                      .text('Click to hide/show')
-                      // .style('font-family', 'curatorBold')
-                      // .style('font-size', '15px')
-                      // .style('line-height', '21px')
+      var legendYear = svg.select('.legend')
+                          .append('text')
+                          .attr('transform', 'translate(0, 20)')
 
       var lineLegend = svg.select('.legend')
                           .selectAll('.legendLine')
-                          .data(legendKeys)
+                          .data(indicators)
                           .enter()
                           .append('g')
                           .attr('class', 'legendLine')
                           .attr('transform', function (d, i) {
-                            return 'translate(0' + ',' + (i + 1) * 20 + ')'
+                            return 'translate(0' + ',' + (i * 2 + 2) * 20 + ')'
                           })
-                          // .style('cursor', 'pointer')
-                          // .style('font-family', 'curatorRegular')
-                          // .style('font-size', '15px')
-                          // .style('line-height', '21px')
                           .on('click', function (d) {
                             var country = d.toLowerCase()
                             var self = d3.select(this)
@@ -101,6 +96,7 @@
 
                             // toggle line visibility
                             toggleDisplay(country)
+                            hideFocus()
 
                             // re-render charts
                             redraw(data, visState)
@@ -113,36 +109,87 @@
                 .attr('transform', 'translate(20,9)')
 
       lineLegend.append('rect')
-                .attr('fill', function (d, i) {
-                  return colors[d.toLowerCase()]
+                // .attr('fill', function (d, i) {
+                //   return colors[d.toLowerCase()]
+                // })
+                .attr('class', function (d) {
+                  return d.toLowerCase()
                 })
                 .attr('width', 15)
                 .attr('height', 2)
 
+      lineLegend.append('text')
+                .attr('class', function (d) {
+                  return d.toLowerCase() + ' countryValue'
+                })
+                .attr('transform', 'translate(20,25)')
+
+      var focus = svg.selectAll('.focus')
+                     .data(indicators)
+                     .enter()
+                     .append('g')
+                     .attr('class', function (d) {
+                       return 'focus ' + d.toLowerCase()
+                     })
+                     .style('display', 'none')
+
+      focus.append('circle')
+           .attr('r', 4.5)
+
+      svg.append('rect')
+         .attr('class', 'overlay')
+         .attr('width', width * 0.83)
+         .attr('height', height)
+         .on('click', handleFocus)
+
+      var focusLine = svg.append('rect')
+                         .attr('class', 'focusLine')
+                         .attr('height', height)
+                         .style('display', 'none')
+
+      // initialise charts
+      var chart = svg.selectAll('.country')
+                     .data(countries)
+                     .enter()
+                     .append('g')
+                     .attr('id', function (d) {
+                       return d.country
+                     })
+                     .attr('class', 'country')
+
+      chart.append('path')
+           .attr('class', function (d) {
+             return 'line ' + d.country
+           })
+           .attr('d', function (d) {
+             return valueline(d.values)
+           })
 
       // helpers
-      function initCharts (dataset, chartGroup) {
-        var chart = chartGroup.selectAll('.country')
-                              .data(dataset)
-                              .enter()
-                              .append('g')
-                              .attr('id', function (d) {
-                                return d.country
-                              })
-                              .attr('class', 'country')
-
-        chart.append('path')
-             .attr('class', 'line')
-             .attr('d', function (d) {
-               return valueline(d.values)
-             })
-             .style('stroke', function (d) {
-               return colors[d.country]
-             })
-      }
+      // function initCharts (dataset, chartGroup) {
+      //   var chart = chartGroup.selectAll('.country')
+      //                         .data(dataset)
+      //                         .enter()
+      //                         .append('g')
+      //                         .attr('id', function (d) {
+      //                           return d.country
+      //                         })
+      //                         .attr('class', 'country')
+      //
+      //   chart.append('path')
+      //        .attr('class', function (d) {
+      //          return 'line ' + d.country
+      //        })
+      //        .attr('d', function (d) {
+      //          return valueline(d.values)
+      //        })
+      //        // .style('stroke', function (d) {
+      //        //   return colors[d.country]
+      //        // })
+      // }
 
       function redraw (dataset) {
-        // remove country attribute from aggregate dataset if hidden
+        // filter hidden countries
         var res = dataset.map(function (d) {
           var obj = {}
           obj.year = d.year
@@ -154,6 +201,7 @@
           return obj
         })
 
+        // rescale y axis
         yScale.domain([0, d3.max(res, function (d) {
           return _yMax(d)
         })])
@@ -163,13 +211,14 @@
            .duration(800)
            .call(customYAxis)
 
+        // redefine valueline in response to changing y-axis
         var newline = d3.line()
                         .x(function (d) { return xScale(d.year) })
                         .y(function (d) { return yScale(d.value) })
 
-        var newdataset = sortDataByCountry(dataset)
+        var currentData = sortDataByCountry(dataset)
 
-        newdataset.forEach(function (datum) {
+        currentData.forEach(function (datum) {
           d3.select('#' + datum.country)
             .select('path')
             .transition()
@@ -178,18 +227,76 @@
               return newline(d.values)
             })
         })
+
+        handleFocus()
       }
 
       function customXAxis (g) {
-        g.call(d3.axisBottom(xScale).ticks(5).tickFormat(d3.format('')))
+        g.call(d3.axisBottom(xScale)
+                 .ticks(5)
+                 .tickFormat(d3.format(''))
+               )
       }
 
       function customYAxis (g) {
-        g.call(d3.axisLeft(yScale).tickSize(-width * 0.83).ticks(6))
-        d3.select('.y').select('.domain').remove()
+        g.call(d3.axisLeft(yScale)
+                 .tickSize(-width * 0.83 - margin.left)
+                 .ticks(6)
+               )
+         .selectAll('.tick line')
+         .attr('transform', 'translate(-' + margin.left + ',0)')
+        d3.select('.y')
+          .select('.domain')
+          .remove()
+        g.selectAll('.tick text')
+         .attr('x', -10)
+         .attr('dy', -4)
+      }
+
+      function handleFocus () {
+        var x0 = Math.round(xScale.invert(d3.mouse(this)[0]))
+        var index = d3.bisector(function (d) {
+          return d.year
+        }).left(data, x0, 1)
+
+        var record = data[index]
+        var focusData = []
+        for (var key in record) {
+          if (key !== 'year') {
+            focusData.push({
+              country: key,
+              value: record[key]
+            })
+          }
+        }
+
+        focusData.forEach(function (point) {
+          svg.select('.focus.' + point.country)
+             .style('display', visState[point.country] ? 'block' : 'none')
+             .select('circle')
+             .attr('transform', 'translate(' + xScale(x0) + ',' + yScale(point.value) + ')')
+
+          svg.select('.countryValue.' + point.country)
+             .style('display', visState[point.country] ? 'block' : 'none')
+             .text(point.value)
+        })
+
+        focusLine.attr('transform', 'translate(' + xScale(x0) + ',0)')
+                 .style('display', 'block')
+
+        legendYear.text(x0)
+      }
+
+      function hideFocus () {
+        focus.style('display', 'none')
+        focusLine.style('display', 'none')
+
+        svg.selectAll('.countryValue')
+           .style('display', 'none')
       }
 
       function toggleDisplay (countryName) {
+        // hides selected country line and focus indicators, blurs out country legend
         var line = d3.select('#' + countryName)
 
         visState[countryName] = !visState[countryName]
@@ -243,38 +350,18 @@
 
         dataset.map(function (yearlyRecord) {
           countryDataset.forEach(function (element) {
-            var rec = {}
-            rec.year = yearlyRecord.year
-            rec.value = yearlyRecord[element.country]
-            element.values.push(rec)
+            // var rec = {}
+            // rec.year = yearlyRecord.year
+            // rec.value = yearlyRecord[element.country]
+            // element.values.push(rec)
+            element.values.push({
+              year: yearlyRecord.year,
+              value: yearlyRecord[element.country]
+            })
           })
         })
         return countryDataset
       }
-
-      // function _updateY (dataset) {
-      //   var res = dataset.map(function (d) {
-      //     var obj = {}
-      //     obj.year = d.year
-      //     for (var country in visState) {
-      //       if (visState[country]) {
-      //         obj[country] = d[country]
-      //       }
-      //     }
-      //     return obj
-      //   })
-      //
-      //   return function () {
-      //     yScale.domain([0, d3.max(res, function (d) {
-      //       return _yMax(d)
-      //     })])
-      //
-      //     svg.select('.y')
-      //        .transition()
-      //        .duration(800)
-      //        .call(d3.axisLeft(yScale).tickSize(0).ticks(5))
-      //   }
-      // }
 
       function _yMax (d) {
         // gets the maximum value from the row

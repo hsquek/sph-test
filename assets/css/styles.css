@@ -29,25 +29,67 @@ svg g {
   font-family: curatorRegular;
 }
 
-.line {
-  fill: none;
-  stroke-width: 2px;
+.india {
+  stroke: #FABE9C;
+  fill: #FABE9C;
+}
+
+.vietnam {
+  stroke: #FED47D;
+  fill: #FED47D;
+}
+
+.thailand {
+  stroke: #F6AB9A;
+  fill: #F6AB9A;
 }
 
 .legendLine  {
   cursor: pointer;
-  /* font-family: curatorRegular; */
   font-size: 15px;
   line-height: 21px;
+  padding-left: 10px;
 }
 
 .legend {
-  font-family: curatorBold;
+  /* font-family: curatorBold; */
   font-size: 15px;
   line-height: 21px;
+  padding-left: 10px;
+}
+
+#legendYear {
+  /* font-family: curatorBold; */
+  font-size: 15px;
+  line-height: 21px;
+  padding-left: 10px;
 }
 
 .tick {
   stroke: #777;
   stroke-width: 0.25px;
+}
+
+.overlay {
+  fill: none;
+  pointer-events: all;
+}
+
+.line {
+  fill: none;
+  stroke-width: 2px;
+}
+
+.legendline text {
+  stroke: none;
+  fill: #333333;
+}
+
+.countryValue {
+  stroke: none;
+  fill: #333333;
+}
+
+.focusLine {
+  width: 0.5px;
 }
