@@ -45,8 +45,9 @@ svg g {
 }
 
 .legendLine  {
+  font-family: curatorBold;
   cursor: pointer;
-  font-size: 15px;
+  font-size: 13px;
   line-height: 21px;
   padding-left: 10px;
 }
