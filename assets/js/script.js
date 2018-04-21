@@ -210,7 +210,7 @@
         if (resize) {
           hideFocus()
           // var screenWidth = document.querySelector('.container').clientWidth
-          var newChartWidth = _getDynamicWidth()
+          // var newChartWidth = _getDynamicWidth()
 
           // if (screenWidth < 750 && screenWidth > 450) {
           //   newChartWidth = screenWidth - width * 0.17 - margin.left
@@ -220,20 +220,22 @@
           //   newChartWidth = 450 - width * 0.17
           // }
 
-          xScale.range([0, newChartWidth])
-                .domain(d3.extent(data, function (d) {
-                  return d.year
-                }))
-
-          svg.select('.x')
-             .transition()
-             .duration(800)
-             .call(customXAxis)
-
-          svg.select('.legend')
-             .attr('transform', 'translate(' + (newChartWidth + 10) + ', 15)')
-          svg.select('.overlay')
-             .style('width', newChartWidth)
+          // xScale.range([0, newChartWidth])
+          //       .domain(d3.extent(data, function (d) {
+          //         return d.year
+          //       }))
+          //
+          // svg.select('.x')
+          //    .transition()
+          //    .duration(800)
+          //    .call(customXAxis)
+          //
+          // svg.select('.legend')
+          //    .attr('transform', 'translate(' + (newChartWidth + 10) + ', 15)')
+          // svg.select('.overlay')
+          //    .style('width', newChartWidth)
+          resizeX()
+          resizeY()
         }
 
         // rescale y axis
@@ -286,8 +288,6 @@
         //   // console.log('small');
         //   tickLength = -450 + width * 0.17 - margin.left
         // }
-
-        console.log('y', tickLength)
 
         g.call(d3.axisLeft(yScale)
                  .tickSize(tickLength)
@@ -409,6 +409,35 @@
           })
         })
         return countryDataset
+      }
+
+      function resizeX () {
+        var newChartWidth = _getDynamicWidth()
+
+        xScale.range([0, newChartWidth])
+              .domain(d3.extent(data, function (d) {
+                return d.year
+              }))
+
+        svg.select('.x')
+           .transition()
+           .duration(800)
+           .call(customXAxis)
+
+        svg.select('.legend')
+           .attr('transform', 'translate(' + (newChartWidth + 10) + ', 15)')
+        svg.select('.overlay')
+           .style('width', newChartWidth)
+      }
+
+      function resizeY () {
+        var screenWidth = document.querySelector('.container').clientWidth
+
+        if (screenWidth < 450) {
+          yScale.range([height, 50])
+        } else {
+          yScale.range([height, 20])
+        }
       }
 
       function _yMax (d) {
