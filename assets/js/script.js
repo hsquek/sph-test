@@ -25,6 +25,8 @@
       var height = 500 - margin.top - margin.bottom
 
       var initWidth = _getDynamicWidth()
+      // var initHeight = _getDynamicHeight()
+
       var svg = d3.select('.container')
                   .append('svg')
                   .attr('width', width + margin.left + margin.right)
@@ -42,7 +44,7 @@
 
       var yScale = d3.scaleLinear()
                      // provide allowance for axis label
-                     .range([height, 20])
+                     .range([height, _isMobile() ? 70 : 20])
                      .domain([0, d3.max(data, function (d) {
                        return _yMax(d)
                      })])
@@ -71,14 +73,15 @@
       var indicators = ['Vietnam', 'India', 'Thailand']
 
       svg.append('g')
-        .attr('class', 'legend')
-        // .attr('transform', 'translate(' + (width * 0.83 + 10) + ', 0)')
-        .attr('transform', 'translate(' + (initWidth + 10) + ', 15)')
-        .append('text')
-        .text('Click to hide/show')
+          .attr('class', 'legend')
+          // .attr('transform', 'translate(' + (width * 0.83 + 10) + ', 0)')
+          .attr('transform', 'translate(' + (initWidth + 10) + ', 15)')
+          .append('text')
+          .text('Click to hide/show')
 
       var legendYear = svg.select('.legend')
                           .append('text')
+                          .attr('class', 'focusValue')
                           .attr('transform', 'translate(0, 20)')
 
       var lineLegend = svg.select('.legend')
@@ -121,9 +124,11 @@
 
       lineLegend.append('text')
                 .attr('class', function (d) {
-                  return d.toLowerCase() + ' countryValue'
+                  return d.toLowerCase() + ' countryValue focusValue'
                 })
                 .attr('transform', 'translate(20,25)')
+
+      if (_isMobile()) moveLegend()
 
       var focus = svg.selectAll('.focus')
                      .data(indicators)
@@ -137,15 +142,14 @@
       focus.append('circle')
            .attr('r', 4.5)
 
-      svg.append('rect')
-         .attr('class', 'overlay')
-         .attr('width', initWidth)
-         .attr('height', height)
-         .on('click', handleFocus)
+      var overlay = svg.append('rect')
+                       .attr('class', 'overlay')
+                       .attr('width', initWidth)
+                       .attr('height', height - 10)
+                       .on('click', handleFocus)
 
       var focusLine = svg.append('rect')
                          .attr('class', 'focusLine')
-                         .attr('height', height)
                          .style('display', 'none')
 
       // initialise charts
@@ -194,6 +198,28 @@
       //        // })
       // }
 
+      function moveLegend (currentWidth) {
+        // var containerWidth = document.querySelector('.container').clientWidth
+        var legend = svg.select('.legend')
+        var focusValues = svg.selectAll('.focusValue')
+
+        if (_isMobile()) {
+          legend.attr('transform', 'translate(' + -margin.left + ', 20)')
+          lineLegend.attr('transform', function (d, i) {
+            // console.log(i)
+            var dx = (i * 3 * margin.left)
+            return 'translate(' + dx + ', 20)'
+          })
+          focusValues.style('visibility', 'hidden')
+        } else {
+          legend.attr('transform', 'translate(' + (currentWidth + 10) + ', 15)')
+          lineLegend.attr('transform', function (d, i) {
+            return 'translate(0' + ',' + (i * 2 + 2) * 20 + ')'
+          })
+          focusValues.style('visibility', 'visible')
+        }
+      }
+
       function redraw (dataset, resize = false) {
         // filter hidden countries
         var res = dataset.map(function (d) {
@@ -209,12 +235,12 @@
 
         if (resize) {
           hideFocus()
-          // var screenWidth = document.querySelector('.container').clientWidth
+          // var containerWidth = document.querySelector('.container').clientWidth
           // var newChartWidth = _getDynamicWidth()
 
-          // if (screenWidth < 750 && screenWidth > 450) {
-          //   newChartWidth = screenWidth - width * 0.17 - margin.left
-          // } else if (screenWidth >= 750) {
+          // if (containerWidth < 750 && containerWidth > 450) {
+          //   newChartWidth = containerWidth - width * 0.17 - margin.left
+          // } else if (containerWidth >= 750) {
           //   newChartWidth = width * 0.83
           // } else {
           //   newChartWidth = 450 - width * 0.17
@@ -274,14 +300,14 @@
       }
 
       function customYAxis (g) {
-        // var screenWidth = document.querySelector('.container').clientWidth
+        // var containerWidth = document.querySelector('.container').clientWidth
 
         var tickLength = _getDynamicWidth('ticks')
-        // console.log(screenWidth);
-        // if (screenWidth < 750 && screenWidth > 450) {
+        // console.log(containerWidth);
+        // if (containerWidth < 750 && containerWidth > 450) {
         //   // console.log('responsive');
-        //   tickLength = -(screenWidth - width * 0.17 - margin.left) - margin.left
-        // } else if (screenWidth >= 750) {
+        //   tickLength = -(containerWidth - width * 0.17 - margin.left) - margin.left
+        // } else if (containerWidth >= 750) {
         //   // console.log('pc');
         //   tickLength = -width * 0.83 - margin.left
         // } else {
@@ -331,8 +357,20 @@
              .text(point.value)
         })
 
-        focusLine.attr('transform', 'translate(' + xScale(x0) + ',0)')
-                 .style('display', 'block')
+        // var containerWidth = document.querySelector('.container').clientWidth
+
+        if (_isMobile()) {
+          focusLine.attr('height', height - 60)
+                   .attr('transform', 'translate(' + xScale(x0) + ',60)')
+                   .style('display', 'block')
+        } else {
+          focusLine.attr('height', height - 10)
+                   .attr('transform', 'translate(' + xScale(x0) + ',10)')
+                   .style('display', 'block')
+        }
+
+        // focusLine.attr('transform', 'translate(' + xScale(x0) + ',0)')
+        //          .style('display', 'block')
 
         legendYear.text(x0)
                   .style('display', 'block')
@@ -424,19 +462,23 @@
            .duration(800)
            .call(customXAxis)
 
-        svg.select('.legend')
-           .attr('transform', 'translate(' + (newChartWidth + 10) + ', 15)')
-        svg.select('.overlay')
-           .style('width', newChartWidth)
+        // svg.select('.legend')
+        //    .attr('transform', 'translate(' + (newChartWidth + 10) + ', 15)')
+        moveLegend(newChartWidth)
+        overlay.attr('width', newChartWidth)
       }
 
       function resizeY () {
-        var screenWidth = document.querySelector('.container').clientWidth
+        // var containerWidth = document.querySelector('.container').clientWidth
 
-        if (screenWidth < 450) {
-          yScale.range([height, 50])
+        if (_isMobile()) {
+          yScale.range([height, 70])
+          overlay.attr('height', height - 60)
+                 .attr('transform', 'translate(0, 60)')
         } else {
           yScale.range([height, 20])
+          overlay.attr('height', height - 10)
+                 .attr('transform', 'translate(0, 0)')
         }
       }
 
@@ -452,12 +494,12 @@
       }
 
       function _getDynamicWidth (getTickWidth = false) {
-        var screenWidth = document.querySelector('.container').clientWidth
+        var containerWidth = document.querySelector('.container').clientWidth
         var dynamicWidth
 
-        if (screenWidth < 750 && screenWidth > 450) {
-          dynamicWidth = screenWidth - width * 0.17 - margin.left
-        } else if (screenWidth >= 750) {
+        if (containerWidth < 750 && containerWidth > 450) {
+          dynamicWidth = containerWidth - width * 0.17 - margin.left - margin.right
+        } else if (containerWidth >= 750) {
           dynamicWidth = width * 0.83
         } else {
           dynamicWidth = 450 - width * 0.17
@@ -468,6 +510,23 @@
         }
 
         return dynamicWidth
+      }
+
+      // function _getDynamicHeight () {
+      //   var containerWidth = document.querySelector('.container').clientWidth
+      //   if (containerWidth > 450) {
+      //     return height
+      //   }
+      //
+      //   return height - 70
+      // }
+
+      function _isMobile () {
+        var containerWidth = document.querySelector('.container').clientWidth
+        if (containerWidth < 450) {
+          return true
+        }
+        return false
       }
     }
   })
