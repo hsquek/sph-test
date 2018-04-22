@@ -59,12 +59,12 @@
          .text('Thousand metric tonnes')
          .attr('transform', 'translate(-' + margin.left + ',0)')
 
-      // initialise legend
+      // initialise legend, tooltip, focus indicators
       var indicators = ['Vietnam', 'India', 'Thailand']
 
+      // i. legend
       svg.append('g')
           .attr('class', 'legend')
-          // .attr('transform', 'translate(' + (initWidth + 10) + ', 15)')
           .append('text')
           .text('Click to hide/show')
 
@@ -79,9 +79,6 @@
                           .enter()
                           .append('g')
                           .attr('class', 'legendLine')
-                          // .attr('transform', function (d, i) {
-                          //   return 'translate(0' + ',' + (i * 2 + 2) * 20 + ')'
-                          // })
                           .on('click', function (d) {
                             var country = d.toLowerCase()
                             var self = d3.select(this)
@@ -117,9 +114,7 @@
                 })
                 .attr('transform', 'translate(20,25)')
 
-      if (_isMobile()) moveLegend()
-
-      // initialise focus points, line indicator, focus overlay
+      // ii. focus points, line indicator, focus overlay
       var focus = svg.selectAll('.focus')
                      .data(indicators)
                      .enter()
@@ -127,7 +122,6 @@
                      .attr('class', function (d) {
                        return 'focus ' + d.toLowerCase()
                      })
-                     // .style('display', 'none')
 
       focus.append('circle')
            .attr('r', 4.5)
@@ -135,17 +129,14 @@
       var overlay = svg.append('rect')
                        .attr('class', 'overlay')
                        .attr('width', initWidth)
-                       // .attr('height', height - 10)
                        .on('click', handleFocus)
 
       var focusLine = svg.append('rect')
                          .attr('class', 'focusLine')
-                         // .style('display', 'none')
 
-      // initialise tooltip (for mobile)
+      // iii. tooltip (for mobile)
       var tooltip = svg.append('g')
                        .attr('class', 'tooltip')
-                       // .style('display', 'none')
 
       tooltip.append('rect')
              .attr('class', 'tooltip-border')
@@ -248,13 +239,13 @@
 
         // re-render chart lines
         currentData.forEach(function (datum) {
-          d3.select('#' + datum.country)
-            .select('path')
-            .transition()
-            .duration(800)
-            .attr('d', function (d) {
-              return newline(d.values)
-            })
+          svg.select('#' + datum.country)
+             .select('path')
+             .transition()
+             .duration(800)
+             .attr('d', function (d) {
+               return newline(d.values)
+             })
         })
       }
 
@@ -282,23 +273,37 @@
 
       function customXAxis (g) {
         g.call(d3.axisBottom(xScale)
-                 .ticks(5)
-                 .tickFormat(d3.format(''))
+                 .ticks(_isMobile() ? 3 : 5)
+                 .tickFormat(function (d, i) {
+                   if (i === 0) return ''
+                   return d
+                 })
                )
+
+        var x = svg.select('.x')
+
+        x.select('.tick')
+         .style('display', 'none')
+
+        x.select('.domain')
+         .style('display', 'none')
+
+        if (_unselectAll()) {
+          x.style('display', 'none')
+        } else {
+          x.style('display', 'block')
+        }
       }
 
       function customYAxis (g) {
         var tickLength = _getDynamicWidth('ticks')
-
         g.call(d3.axisLeft(yScale)
                  .tickSize(tickLength)
-                 .ticks(6)
                )
          .selectAll('.tick line')
          .attr('transform', 'translate(-' + margin.left + ',0)')
-        d3.select('.y')
-          .select('.domain')
-          .remove()
+        svg.select('.y .domain')
+          .style('visibility', 'hidden')
         g.selectAll('.tick text')
          .attr('x', -10)
          .attr('dy', -4)
@@ -395,17 +400,17 @@
       function hideFocus () {
         focus.style('display', 'none')
         focusLine.style('display', 'none')
+
         legendYear.style('display', 'none')
-
-        tooltip.style('display', 'none')
-
         svg.selectAll('.legendLine > .focusValue')
            .style('display', 'none')
+
+        tooltip.style('display', 'none')
       }
 
       function toggleCountryDisplay (countryName) {
         // hides selected country line and focus indicators, blurs out country legend
-        var line = d3.select('#' + countryName)
+        var line = svg.select('#' + countryName)
 
         visState[countryName] = !visState[countryName]
 
@@ -521,7 +526,7 @@
             yearlyCounts.push(d[key])
           }
         }
-        return Math.max(...yearlyCounts) * 1.1
+        return Math.max(...yearlyCounts) * 1.3
       }
 
       function _getDynamicWidth (getTickWidth = false) {
@@ -551,6 +556,39 @@
         }
         return false
       }
+
+      function _unselectAll () {
+        for (var country in visState) {
+          if (visState[country]) return false
+        }
+        return true
+      }
+
+      // function yMax (d) {
+      //   var highestValues = d.reduce(function (a, b) {
+      //     for (var country in visState) {
+      //       if (visState[country]) {
+      //         if (b[country] > a[country]) {
+      //           a[country] = b[country]
+      //         }
+      //       }
+      //     }
+      //     return a
+      //   })
+      //
+      //   return _yMax(highestValues)
+      // }
+
+      // function simpleTickCounter (val) {
+      //   // generate 5 or 6 ticks, depending on whether the natural log of val is odd/even
+      //   var step = Math.floor(Math.log(val))
+      //
+      //   if (step % 2) {
+      //     return 5
+      //   } else {
+      //     return 6
+      //   }
+      // }
     }
   })
 }())
