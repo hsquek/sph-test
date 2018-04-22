@@ -1,11 +1,11 @@
 @font-face {
   font-family: curatorBold;
-  src: url('/assets/static/curatorbold.otf')format('opentype');
+  src: url('curatorbold.otf')format('opentype');
 }
 
 @font-face {
   font-family: curatorRegular;
-  src: url('/assets/static/curatorregular.otf')format('opentype');
+  src: url('curatorregular.otf')format('opentype');
 }
 
 .container {
