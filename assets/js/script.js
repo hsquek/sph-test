@@ -5,12 +5,6 @@
     type: 'GET',
     url: 'milledRiceEndingStocks.csv',
     success: function (raw) {
-      const idx = {
-        vietnam: 0,
-        india: 1,
-        thailand: 2
-      }
-
       const visState = {
         india: true,
         vietnam: true,
@@ -19,13 +13,13 @@
 
       var data = parse(raw, visState)
       var countries = sortDataByCountry(data, visState)
+
       // set the dimensions and margins of the graph
       var margin = { top: 20, right: 20, bottom: 30, left: 50 }
       var width = 750 - margin.left - margin.right
       var height = 500 - margin.top - margin.bottom
 
       var initWidth = _getDynamicWidth()
-      // var initHeight = _getDynamicHeight()
 
       var svg = d3.select('.container')
                   .append('svg')
@@ -36,7 +30,6 @@
 
       // set X and Y scales
       var xScale = d3.scaleLinear()
-                     // .range([0, width * 0.83])
                      .range([0, initWidth])
                      .domain(d3.extent(data, function (d) {
                        return d.year
@@ -66,16 +59,12 @@
          .text('Thousand metric tonnes')
          .attr('transform', 'translate(-' + margin.left + ',0)')
 
-      var valueline = d3.line()
-                        .x(function (d) { return xScale(d.year) })
-                        .y(function (d) { return yScale(d.value) })
-
+      // initialise legend
       var indicators = ['Vietnam', 'India', 'Thailand']
 
       svg.append('g')
           .attr('class', 'legend')
-          // .attr('transform', 'translate(' + (width * 0.83 + 10) + ', 0)')
-          .attr('transform', 'translate(' + (initWidth + 10) + ', 15)')
+          // .attr('transform', 'translate(' + (initWidth + 10) + ', 15)')
           .append('text')
           .text('Click to hide/show')
 
@@ -90,9 +79,9 @@
                           .enter()
                           .append('g')
                           .attr('class', 'legendLine')
-                          .attr('transform', function (d, i) {
-                            return 'translate(0' + ',' + (i * 2 + 2) * 20 + ')'
-                          })
+                          // .attr('transform', function (d, i) {
+                          //   return 'translate(0' + ',' + (i * 2 + 2) * 20 + ')'
+                          // })
                           .on('click', function (d) {
                             var country = d.toLowerCase()
                             var self = d3.select(this)
@@ -102,11 +91,11 @@
                                 .style('opacity', visState[country] ? '0.5' : '1')
 
                             // toggle line visibility
-                            toggleDisplay(country)
+                            toggleCountryDisplay(country)
                             hideFocus()
 
                             // re-render charts
-                            redraw(data)
+                            redraw(data, true)
                           })
 
       lineLegend.append('text')
@@ -130,6 +119,7 @@
 
       if (_isMobile()) moveLegend()
 
+      // initialise focus points, line indicator, focus overlay
       var focus = svg.selectAll('.focus')
                      .data(indicators)
                      .enter()
@@ -137,7 +127,7 @@
                      .attr('class', function (d) {
                        return 'focus ' + d.toLowerCase()
                      })
-                     .style('display', 'none')
+                     // .style('display', 'none')
 
       focus.append('circle')
            .attr('r', 4.5)
@@ -145,14 +135,64 @@
       var overlay = svg.append('rect')
                        .attr('class', 'overlay')
                        .attr('width', initWidth)
-                       .attr('height', height - 10)
+                       // .attr('height', height - 10)
                        .on('click', handleFocus)
 
       var focusLine = svg.append('rect')
                          .attr('class', 'focusLine')
-                         .style('display', 'none')
+                         // .style('display', 'none')
 
-      // initialise charts
+      // initialise tooltip (for mobile)
+      var tooltip = svg.append('g')
+                       .attr('class', 'tooltip')
+                       // .style('display', 'none')
+
+      tooltip.append('rect')
+             .attr('class', 'tooltip-border')
+             .attr('width', 160)
+             .attr('height', 80)
+
+      tooltip.append('text')
+             .attr('id', 'tooltip-year')
+             .text('year')
+             .attr('transform', 'translate(10,15)')
+
+      var tooltipElements = tooltip.selectAll('.tooltip-countries')
+                                 .data(indicators)
+                                 .enter()
+                                 .append('g')
+                                 .attr('class', 'tooltip-countries')
+                                 .attr('transform', function (d, i) {
+                                   return 'translate(0' + ',' + (i + 2) * 15 + ')'
+                                 })
+
+      tooltipElements.append('text')
+                     .text(function (d) {
+                       return d
+                     })
+                     .attr('transform', 'translate(30,9)')
+
+      tooltipElements.append('rect')
+                     .attr('class', function (d) {
+                       return d.toLowerCase()
+                     })
+                     .attr('width', 15)
+                     .attr('height', 2)
+                     .attr('transform', 'translate(10, 0)')
+
+      tooltipElements.append('text')
+                     .attr('class', function (d) {
+                       return d.toLowerCase() + ' countryValue focusValue'
+                     })
+                     .attr('transform', function (d, i) {
+                       return 'translate(90,9)'
+                     })
+
+      // define valueline then initialise charts
+      var valueline = d3.line()
+                        .x(function (d) { return xScale(d.year) })
+                        .y(function (d) { return yScale(d.value) })
+
       var chart = svg.selectAll('.country')
                      .data(countries)
                      .enter()
@@ -170,57 +210,18 @@
              return valueline(d.values)
            })
 
+      // responsivefy
       $(window).on('resize', function () {
-        // var container = document.querySelector('.container')
         redraw(data, true)
       })
 
-      // helpers
-      // function initCharts (dataset, chartGroup) {
-      //   var chart = chartGroup.selectAll('.country')
-      //                         .data(dataset)
-      //                         .enter()
-      //                         .append('g')
-      //                         .attr('id', function (d) {
-      //                           return d.country
-      //                         })
-      //                         .attr('class', 'country')
-      //
-      //   chart.append('path')
-      //        .attr('class', function (d) {
-      //          return 'line ' + d.country
-      //        })
-      //        .attr('d', function (d) {
-      //          return valueline(d.values)
-      //        })
-      //        // .style('stroke', function (d) {
-      //        //   return colors[d.country]
-      //        // })
-      // }
+      redraw(data, true)
 
-      function moveLegend (currentWidth) {
-        // var containerWidth = document.querySelector('.container').clientWidth
-        var legend = svg.select('.legend')
-        var focusValues = svg.selectAll('.focusValue')
-
-        if (_isMobile()) {
-          legend.attr('transform', 'translate(' + -margin.left + ', 20)')
-          lineLegend.attr('transform', function (d, i) {
-            // console.log(i)
-            var dx = (i * 3 * margin.left)
-            return 'translate(' + dx + ', 20)'
-          })
-          focusValues.style('visibility', 'hidden')
-        } else {
-          legend.attr('transform', 'translate(' + (currentWidth + 10) + ', 15)')
-          lineLegend.attr('transform', function (d, i) {
-            return 'translate(0' + ',' + (i * 2 + 2) * 20 + ')'
-          })
-          focusValues.style('visibility', 'visible')
-        }
-      }
-
+      // helper functions
       function redraw (dataset, resize = false) {
+        // redraws chart on user interaction (resize, click)
+        // called immediately after initialisation to set css properties
+
         // filter hidden countries
         var res = dataset.map(function (d) {
           var obj = {}
@@ -233,46 +234,10 @@
           return obj
         })
 
-        if (resize) {
-          hideFocus()
-          // var containerWidth = document.querySelector('.container').clientWidth
-          // var newChartWidth = _getDynamicWidth()
+        if (resize) hideFocus()
 
-          // if (containerWidth < 750 && containerWidth > 450) {
-          //   newChartWidth = containerWidth - width * 0.17 - margin.left
-          // } else if (containerWidth >= 750) {
-          //   newChartWidth = width * 0.83
-          // } else {
-          //   newChartWidth = 450 - width * 0.17
-          // }
-
-          // xScale.range([0, newChartWidth])
-          //       .domain(d3.extent(data, function (d) {
-          //         return d.year
-          //       }))
-          //
-          // svg.select('.x')
-          //    .transition()
-          //    .duration(800)
-          //    .call(customXAxis)
-          //
-          // svg.select('.legend')
-          //    .attr('transform', 'translate(' + (newChartWidth + 10) + ', 15)')
-          // svg.select('.overlay')
-          //    .style('width', newChartWidth)
-          resizeX()
-          resizeY()
-        }
-
-        // rescale y axis
-        yScale.domain([0, d3.max(res, function (d) {
-          return _yMax(d)
-        })])
-
-        svg.select('.y')
-           .transition()
-           .duration(800)
-           .call(customYAxis)
+        resizeX()
+        resizeY(res)
 
         // redefine valueline in response to changing y-axis
         var newline = d3.line()
@@ -281,6 +246,7 @@
 
         var currentData = sortDataByCountry(dataset)
 
+        // re-render chart lines
         currentData.forEach(function (datum) {
           d3.select('#' + datum.country)
             .select('path')
@@ -292,6 +258,28 @@
         })
       }
 
+      function moveLegend (currentWidth) {
+        // move legend based on current screen size
+        var legend = svg.select('.legend')
+
+        if (_isMobile()) {
+          // move legend to top of chart
+          legend.attr('transform', 'translate(' + -margin.left + ', 20)')
+          lineLegend.attr('transform', function (d, i) {
+            // sets legendLines sideways
+            var dx = (i * 3 * margin.left)
+            return 'translate(' + dx + ', 20)'
+          })
+        } else {
+          // move legend to right hand side
+          legend.attr('transform', 'translate(' + (currentWidth + 10) + ', 15)')
+          lineLegend.attr('transform', function (d, i) {
+            // sets legendLines on top of each other
+            return 'translate(0' + ',' + (i * 2 + 2) * 20 + ')'
+          })
+        }
+      }
+
       function customXAxis (g) {
         g.call(d3.axisBottom(xScale)
                  .ticks(5)
@@ -300,20 +288,7 @@
       }
 
       function customYAxis (g) {
-        // var containerWidth = document.querySelector('.container').clientWidth
-
         var tickLength = _getDynamicWidth('ticks')
-        // console.log(containerWidth);
-        // if (containerWidth < 750 && containerWidth > 450) {
-        //   // console.log('responsive');
-        //   tickLength = -(containerWidth - width * 0.17 - margin.left) - margin.left
-        // } else if (containerWidth >= 750) {
-        //   // console.log('pc');
-        //   tickLength = -width * 0.83 - margin.left
-        // } else {
-        //   // console.log('small');
-        //   tickLength = -450 + width * 0.17 - margin.left
-        // }
 
         g.call(d3.axisLeft(yScale)
                  .tickSize(tickLength)
@@ -330,7 +305,12 @@
       }
 
       function handleFocus () {
-        var x0 = Math.round(xScale.invert(d3.mouse(this)[0]))
+        // display focus indicators (depending on screen size)
+        var mouseX = d3.mouse(this)[0]
+        var mouseY = d3.mouse(this)[1]
+
+        // identify closest year and retrieve rice records
+        var x0 = Math.round(xScale.invert(mouseX))
         var index = d3.bisector(function (d) {
           return d.year
         }).left(data, x0, 1)
@@ -346,6 +326,7 @@
           }
         }
 
+        // update indicator values (all screen sizes)
         focusData.forEach(function (point) {
           svg.select('.focus.' + point.country)
              .style('display', visState[point.country] ? 'block' : 'none')
@@ -353,27 +334,62 @@
              .attr('transform', 'translate(' + xScale(x0) + ',' + yScale(point.value) + ')')
 
           svg.select('.countryValue.' + point.country)
-             .style('display', visState[point.country] ? 'block' : 'none')
+             .text(point.value)
+
+          svg.select('.tooltip-countries .countryValue.' + point.country)
              .text(point.value)
         })
 
-        // var containerWidth = document.querySelector('.container').clientWidth
+        // toggle legend/tooltip indicator display
+        // if country is un-selected, hide relevant indicator
+        var legendFocusValues = svg.selectAll('.legendLine > .focusValue')
 
         if (_isMobile()) {
           focusLine.attr('height', height - 60)
                    .attr('transform', 'translate(' + xScale(x0) + ',60)')
                    .style('display', 'block')
+
+          legendFocusValues.style('display', 'none')
+          legendYear.text(x0)
+                    .style('display', 'none')
+
+          tooltip.style('display', 'block')
+                 .attr('transform', function (d) {
+                   var displaceX = 0
+                   var displaceY = 0
+                   var containerWidth = _getDynamicWidth()
+                   if (mouseX + 160 > containerWidth) {
+                     displaceX = mouseX - containerWidth * 1 / 2
+                   } else {
+                     displaceX = 1.1 * mouseX
+                   }
+
+                   if (mouseY + 80 > height) {
+                     displaceY = height - 80
+                   } else {
+                     displaceY = mouseY
+                   }
+
+                   return 'translate(' + displaceX + ',' + displaceY + ')'
+                 })
+          svg.selectAll('.tooltip-countries .focusValue')
+              .style('display', function (d) {
+                return visState[d.toLowerCase()] ? 'block' : 'none'
+              })
+          svg.select('#tooltip-year').text(x0)
         } else {
           focusLine.attr('height', height - 10)
                    .attr('transform', 'translate(' + xScale(x0) + ',10)')
                    .style('display', 'block')
+
+          legendFocusValues.style('display', function (d) {
+            return visState[d.toLowerCase()] ? 'block' : 'none'
+          })
+
+          tooltip.style('display', 'none')
+          legendYear.text(x0)
+                    .style('display', 'block')
         }
-
-        // focusLine.attr('transform', 'translate(' + xScale(x0) + ',0)')
-        //          .style('display', 'block')
-
-        legendYear.text(x0)
-                  .style('display', 'block')
       }
 
       function hideFocus () {
@@ -381,11 +397,13 @@
         focusLine.style('display', 'none')
         legendYear.style('display', 'none')
 
-        svg.selectAll('.countryValue')
+        tooltip.style('display', 'none')
+
+        svg.selectAll('.legendLine > .focusValue')
            .style('display', 'none')
       }
 
-      function toggleDisplay (countryName) {
+      function toggleCountryDisplay (countryName) {
         // hides selected country line and focus indicators, blurs out country legend
         var line = d3.select('#' + countryName)
 
@@ -404,7 +422,53 @@
         }
       }
 
+      function resizeX () {
+        // resize chart laterally
+        var newChartWidth = _getDynamicWidth()
+
+        xScale.range([0, newChartWidth])
+              .domain(d3.extent(data, function (d) {
+                return d.year
+              }))
+
+        svg.select('.x')
+           .transition()
+           .duration(800)
+           .call(customXAxis)
+
+        moveLegend(newChartWidth)
+        overlay.attr('width', newChartWidth)
+      }
+
+      function resizeY (data) {
+        // resize chart horizontally
+        if (_isMobile()) {
+          yScale.range([height, 70])
+          overlay.attr('height', height - 60)
+                 .attr('transform', 'translate(0, 60)')
+        } else {
+          yScale.range([height, 20])
+          overlay.attr('height', height - 10)
+                 .attr('transform', 'translate(0, 10)')
+        }
+
+        // rescale y axis
+        yScale.domain([0, d3.max(data, function (d) {
+          return _yMax(d)
+        })])
+
+        svg.select('.y')
+           .transition()
+           .duration(800)
+           .call(customYAxis)
+      }
+
       function parse (csv) {
+        const idx = {
+          vietnam: 0,
+          india: 1,
+          thailand: 2
+        }
         var copy = csv
         var rows = copy.split('\n')
         // remove headers and empty last row
@@ -449,39 +513,6 @@
         return countryDataset
       }
 
-      function resizeX () {
-        var newChartWidth = _getDynamicWidth()
-
-        xScale.range([0, newChartWidth])
-              .domain(d3.extent(data, function (d) {
-                return d.year
-              }))
-
-        svg.select('.x')
-           .transition()
-           .duration(800)
-           .call(customXAxis)
-
-        // svg.select('.legend')
-        //    .attr('transform', 'translate(' + (newChartWidth + 10) + ', 15)')
-        moveLegend(newChartWidth)
-        overlay.attr('width', newChartWidth)
-      }
-
-      function resizeY () {
-        // var containerWidth = document.querySelector('.container').clientWidth
-
-        if (_isMobile()) {
-          yScale.range([height, 70])
-          overlay.attr('height', height - 60)
-                 .attr('transform', 'translate(0, 60)')
-        } else {
-          yScale.range([height, 20])
-          overlay.attr('height', height - 10)
-                 .attr('transform', 'translate(0, 0)')
-        }
-      }
-
       function _yMax (d) {
         // gets the maximum value from the row
         var yearlyCounts = []
@@ -494,6 +525,7 @@
       }
 
       function _getDynamicWidth (getTickWidth = false) {
+        // calculates chart width for current screen size
         var containerWidth = document.querySelector('.container').clientWidth
         var dynamicWidth
 
@@ -511,15 +543,6 @@
 
         return dynamicWidth
       }
-
-      // function _getDynamicHeight () {
-      //   var containerWidth = document.querySelector('.container').clientWidth
-      //   if (containerWidth > 450) {
-      //     return height
-      //   }
-      //
-      //   return height - 70
-      // }
 
       function _isMobile () {
         var containerWidth = document.querySelector('.container').clientWidth

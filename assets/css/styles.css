@@ -94,3 +94,8 @@ svg g {
 .focusLine {
   width: 0.5px;
 }
+
+.tooltip-border {
+  stroke: #333333;
+  fill: white;
+}
