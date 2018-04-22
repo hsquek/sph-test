@@ -92,7 +92,7 @@
                             hideFocus()
 
                             // re-render charts
-                            redraw(data, true)
+                            redraw(data)
                           })
 
       lineLegend.append('text')
@@ -203,12 +203,14 @@
 
       // responsivefy
       $(window).on('resize', function () {
-        redraw(data, true)
+        redraw(data)
       })
 
-      redraw(data, true)
+      redraw(data)
 
+      // --------------------------------------------------------------
       // helper functions
+      // --------------------------------------------------------------
       function redraw (dataset, resize = false) {
         // redraws chart on user interaction (resize, click)
         // called immediately after initialisation to set css properties
@@ -225,8 +227,7 @@
           return obj
         })
 
-        if (resize) hideFocus()
-
+        hideFocus()
         resizeX()
         resizeY(res)
 
@@ -445,7 +446,7 @@
         overlay.attr('width', newChartWidth)
       }
 
-      function resizeY (data) {
+      function resizeY (dataset) {
         // resize chart horizontally
         if (_isMobile()) {
           yScale.range([height, 70])
@@ -458,7 +459,7 @@
         }
 
         // rescale y axis
-        yScale.domain([0, d3.max(data, function (d) {
+        yScale.domain([0, d3.max(dataset, function (d) {
           return _yMax(d)
         })])
 
@@ -563,32 +564,6 @@
         }
         return true
       }
-
-      // function yMax (d) {
-      //   var highestValues = d.reduce(function (a, b) {
-      //     for (var country in visState) {
-      //       if (visState[country]) {
-      //         if (b[country] > a[country]) {
-      //           a[country] = b[country]
-      //         }
-      //       }
-      //     }
-      //     return a
-      //   })
-      //
-      //   return _yMax(highestValues)
-      // }
-
-      // function simpleTickCounter (val) {
-      //   // generate 5 or 6 ticks, depending on whether the natural log of val is odd/even
-      //   var step = Math.floor(Math.log(val))
-      //
-      //   if (step % 2) {
-      //     return 5
-      //   } else {
-      //     return 6
-      //   }
-      // }
     }
   })
 }())
